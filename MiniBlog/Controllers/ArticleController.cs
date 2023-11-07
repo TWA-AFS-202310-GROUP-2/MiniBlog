@@ -19,11 +19,14 @@ namespace MiniBlog.Controllers
 
         private readonly ArticleService articleService = null!;
 
-        public ArticleController(ArticleStore articleStore, UserStore userStore, ArticleService articleService)
+        private readonly UserService userService = null!;
+
+        public ArticleController(ArticleStore articleStore, UserStore userStore, ArticleService articleService, UserService userService)
         {
             this.articleStore = articleStore;
             this.userStore = userStore;
             this.articleService = articleService;
+            this.userService = userService;
         }
 
         [HttpGet]
