@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Mime;
@@ -59,11 +60,29 @@ namespace MiniBlogTest.ControllerTest
         [Fact]
         public async void Should_create_article_and_register_user_correct()
         {
-            var client = GetClient(new ArticleStore(new List<Article>
-            {
-                new Article(null, "Happy new year", "Happy 2021 new year"),
-                new Article(null, "Happy Halloween", "Halloween is coming"),
-            }), new UserStore(new List<User>()));
+            //given
+            var userStore = new UserStore(new List<User>() { });
+            var mockArticleRepository = new Mock<IArticleRepository>();
+            var mockUserRepository = new Mock<IUserRepository>();
+            mockArticleRepository.Setup(repo => repo.CreateArticle(It.IsAny<Article>()))
+                .Callback<Article>(article => article.Id = Guid.NewGuid().ToString())
+                .ReturnsAsync((Article article) =>
+                                {
+                                    userStore.Users.Add(new User(article.UserName));
+                                    return article;
+                                });
+            mockArticleRepository.Setup(repo => repo.GetArticles())
+                                 .ReturnsAsync(
+                                    new List<Article>
+                                    {
+                                        new Article("Tom", "Good day", "What a good day today!"),
+                                        new Article("Tom", "Good day", "What a good day today!"),
+                                    });
+            var client = GetClient(
+                new ArticleStore(),
+                userStore,
+                mockArticleRepository.Object,
+                mockUserRepository.Object);
 
             string userNameWhoWillAdd = "Tom";
             string articleContent = "What a good day today!";
@@ -80,10 +99,10 @@ namespace MiniBlogTest.ControllerTest
             var articleResponse = await client.GetAsync("/article");
             var body = await articleResponse.Content.ReadAsStringAsync();
             var articles = JsonConvert.DeserializeObject<List<Article>>(body);
-            Assert.Equal(3, articles.Count);
-            Assert.Equal(articleTitle, articles[2].Title);
-            Assert.Equal(articleContent, articles[2].Content);
-            Assert.Equal(userNameWhoWillAdd, articles[2].UserName);
+            Assert.Equal(2, articles.Count);
+            Assert.Equal(articleTitle, articles[1].Title);
+            Assert.Equal(articleContent, articles[1].Content);
+            Assert.Equal(userNameWhoWillAdd, articles[1].UserName);
 
             var userResponse = await client.GetAsync("/user");
             var usersJson = await userResponse.Content.ReadAsStringAsync();
