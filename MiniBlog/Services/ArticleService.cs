@@ -43,8 +43,8 @@ public class ArticleService
         return await articleRepository.GetArticles();
     }
 
-    public Article? GetById(Guid id)
+    public async Task<Article?> GetById(string id)
     {
-        return articleStore.Articles.FirstOrDefault(article => article.Id == id.ToString());
+        return await articleRepository.GetArticleById(id);
     }
 }
