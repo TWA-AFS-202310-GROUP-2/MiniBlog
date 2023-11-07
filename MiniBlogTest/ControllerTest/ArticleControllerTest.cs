@@ -101,12 +101,12 @@ namespace MiniBlogTest.ControllerTest
             Assert.Equal(articleContent, articles[2].Content);
             Assert.Equal(userNameWhoWillAdd, articles[2].UserName);
 
+            _userRepositoryMock.Setup(ur => ur.GetUsers()).ReturnsAsync(new List<User>{new User("Tom")});
 
             var userResponse = await client.GetAsync("/user");
             var usersJson = await userResponse.Content.ReadAsStringAsync();
             var users = JsonConvert.DeserializeObject<List<User>>(usersJson);
 
-            //_userRepositoryMock.Verify(repo=> repo.GetUsers(), Times.Once);
 
             Assert.Equal(1, users.Count);
             Assert.Equal(userNameWhoWillAdd, users[0].Name);
