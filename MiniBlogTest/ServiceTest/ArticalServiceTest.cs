@@ -2,53 +2,79 @@ using Xunit;
 using MiniBlog.Services;
 using MiniBlog.Stores;
 using MiniBlog.Model;
-using System.Collections.Generic;
 using MiniBlog.Repositories;
 using System;
-using MongoDB.Driver;
-using Microsoft.Extensions.Configuration;
 using System.Threading.Tasks;
 using Moq;
+using MongoDB.Driver;
+using System.Collections.Generic;
 
 namespace MiniBlogTest.ServiceTest
 {
-    public class ArticalServiceTest
+    public class ArticleServiceTest
     {
-        private readonly ArticleRepository articleRepository;
+        private readonly Mock<IArticleRepository> mockArticleRepository;
+        private readonly ArticleService articleService;
+        private readonly UserStore userStore;
 
-        public ArticalServiceTest()
+        public ArticleServiceTest()
         {
-            var mongoClient = new MongoClient("mongodb://localhost:27017");
-            articleRepository = new ArticleRepository(mongoClient);
+            mockArticleRepository = new Mock<IArticleRepository>();
+            userStore = new UserStore(new List<User>());
+            articleService = new ArticleService(mockArticleRepository.Object, userStore);
         }
 
         [Fact]
         public async Task ShouldCreateArticleAndRegisterUserCorrect_WhenCreateArticleService_GivenArticle()
         {
-            var articleService = new ArticleService(articleRepository, new UserStore(new List<User>()));
-            var article = await articleService.CreateArticleService(new Article("test", "test", "test"));
-            Assert.Equal("test", article.UserName);
-            Assert.Equal("test", article.Title);
-            Assert.Equal("test", article.Content);
+            // Arrange
+            var articleToCreate = new Article("test", "test", "test");
+            mockArticleRepository.Setup(repo => repo.CreateArticle(It.IsAny<Article>()))
+                                 .Callback<Article>(a => a.Id = Guid.NewGuid())
+                                 .ReturnsAsync((Article a) => a);
+
+            // Act
+            var createdArticle = await articleService.CreateArticleService(articleToCreate);
+
+            // Assert
+            Assert.NotNull(createdArticle.Id);
+            Assert.Equal("test", createdArticle.UserName);
+            Assert.Equal("test", createdArticle.Title);
+            Assert.Equal("test", createdArticle.Content);
+            mockArticleRepository.Verify(repo => repo.CreateArticle(It.IsAny<Article>()), Times.Once);
         }
 
         [Fact]
         public async Task ShouldGetArticleCorrect_WhenGetById_GivenExistingArticleId()
         {
-            var articleService = new ArticleService(articleRepository, new UserStore(new List<User>()));
-            var article = await articleService.CreateArticleService(new Article("test", "test", "test"));
-            var articleId = article.Id;
+            // Arrange
+            var articleId = Guid.NewGuid();
+            var expectedArticle = new Article("test", "test", "test") { Id = articleId };
+            mockArticleRepository.Setup(repo => repo.GetById(articleId))
+                                 .ReturnsAsync(expectedArticle);
+
+            // Act
             var foundArticle = await articleService.GetById(articleId);
-            Assert.Equal(article, foundArticle);
+
+            // Assert
+            Assert.Equal(expectedArticle, foundArticle);
+            mockArticleRepository.Verify(repo => repo.GetById(articleId), Times.Once);
         }
 
         [Fact]
         public async Task ShouldReturnNull_WhenGetById_GivenNonExistingArticleId()
         {
-            var articleService = new ArticleService(articleRepository, new UserStore(new List<User>()));
-            var article = await articleService.CreateArticleService(new Article("test", "test", "test"));
-            var foundArticle = await articleService.GetById(Guid.NewGuid());
+            // Arrange
+            var nonExistingArticleId = Guid.NewGuid();
+            mockArticleRepository.Setup(repo => repo.GetById(nonExistingArticleId))
+                                 .ReturnsAsync((Article)null);
+
+            // Act
+            var foundArticle = await articleService.GetById(nonExistingArticleId);
+
+            // Assert
             Assert.Null(foundArticle);
+            mockArticleRepository.Verify(repo => repo.GetById(nonExistingArticleId), Times.Once);
         }
     }
 }

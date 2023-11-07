@@ -9,10 +9,10 @@ namespace MiniBlog.Services
 {
     public class ArticleService
     {
-        private readonly ArticleRepository articleRepository = null!;
+        private readonly IArticleRepository articleRepository = null!;
         private readonly UserStore userStore = null!;
 
-        public ArticleService(ArticleRepository articleRepository, UserStore userStore)
+        public ArticleService(IArticleRepository articleRepository, UserStore userStore)
         {
             this.articleRepository = articleRepository;
             this.userStore = userStore;

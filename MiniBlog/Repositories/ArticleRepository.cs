@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace MiniBlog.Repositories
 {
-    public class ArticleRepository
+    public class ArticleRepository : IArticleRepository
     {
         private readonly IMongoCollection<Article> articleCollection;
         public ArticleRepository(IMongoClient mongoClient)
