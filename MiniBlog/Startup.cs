@@ -39,6 +39,9 @@ namespace MiniBlog
             var mongoClient = new MongoClient(Configuration.GetConnectionString("MongoDB"));
             services.AddSingleton<IMongoClient>(mongoClient);
 
+            services.AddScoped<ArticleRepository>();
+            services.AddScoped<UserRepository>();
+
             services.AddScoped<IArticleRepository>(provider => new ArticleRepository(mongoClient));
         }
 

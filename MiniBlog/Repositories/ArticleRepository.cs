@@ -26,5 +26,11 @@ namespace MiniBlog.Repositories
             await articleCollection.InsertOneAsync(article);
             return await articleCollection.Find(a => a.Title == article.Title).FirstAsync();
         }
+
+        public async Task<Article> GetById(Guid id)
+        {
+            var foundArticle = await articleCollection.Find(_ => _.Id == id).FirstOrDefaultAsync();
+            return foundArticle;
+        }
     }
 }
