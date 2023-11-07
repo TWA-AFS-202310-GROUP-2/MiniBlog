@@ -5,7 +5,7 @@ using MongoDB.Driver;
 
 namespace MiniBlog.Repositories;
 
-public class UserRepository
+public class UserRepository:IUserRepository
 {
     private readonly IMongoCollection<User> userCollection = null!;
 
