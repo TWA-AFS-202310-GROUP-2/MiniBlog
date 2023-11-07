@@ -1,23 +1,25 @@
 using MiniBlog.Model;
+using MiniBlog.Repositories;
 using MiniBlog.Stores;
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MiniBlog.Services
 {
     public class ArticleService
     {
-        private readonly ArticleStore articleStore = null!;
+        private readonly ArticleRepository articleRepository = null!;
         private readonly UserStore userStore = null!;
 
-        public ArticleService(ArticleStore articleStore, UserStore userStore)
+        public ArticleService(ArticleRepository articleRepository, UserStore userStore)
         {
-            this.articleStore = articleStore;
+            this.articleRepository = articleRepository;
             this.userStore = userStore;
         }
 
-        public Article CreateArticleService(Article article)
+        public async Task<Article> CreateArticleService(Article article)
         {
-            article.Id = Guid.NewGuid();
             if (article.UserName != null)
             {
                 if (!userStore.Users.Exists(_ => article.UserName == _.Name))
@@ -25,16 +27,22 @@ namespace MiniBlog.Services
                     userStore.Users.Add(new User(article.UserName));
                 }
 
-                articleStore.Articles.Add(article);
+                await articleRepository.CreateArticle(article);
             }
 
             return article;           
         } 
 
-        public Article GetById(Guid id)
+        public async Task<Article> GetById(Guid id)
         {
-            var foundArticle = articleStore.Articles.Find(article => article.Id == id);
+            var foundArticle = await articleRepository.GetById(id);
             return foundArticle;
+        }
+
+        public async Task<List<Article>> GetAll()
+        {
+            var articles = await articleRepository.GetAll();
+            return articles;
         }
     }
 }

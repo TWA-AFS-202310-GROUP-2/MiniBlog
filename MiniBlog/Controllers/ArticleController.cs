@@ -27,23 +27,22 @@ namespace MiniBlog.Controllers
         }
 
         [HttpGet]
-        public List<Article> List()
+        public async Task<List<Article>> List()
         {
-            Console.WriteLine(articleStore.Articles);
-            return articleStore.Articles;
+            return await articleService.GetAll();
         }
 
         [HttpPost]
-        public IActionResult Create(Article article)
+        public async Task<IActionResult> Create(Article article)
         {
-            articleService.CreateArticleService(article);
+            await articleService.CreateArticleService(article);
             return CreatedAtAction(nameof(GetById), new { id = article.Id }, article);
         }
 
         [HttpGet("{id}")]
-        public Article GetById(Guid id)
+        public async Task<Article> GetById(Guid id)
         {
-            var foundArticle = articleService.GetById(id);
+            var foundArticle = await articleService.GetById(id);
             return foundArticle;
         }
     }
