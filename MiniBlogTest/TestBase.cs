@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using MiniBlog;
 using MiniBlog.Model;
+using MiniBlog.Services;
 using MiniBlog.Stores;
 using Xunit;
 
@@ -31,6 +32,7 @@ namespace MiniBlogTest
                         {
                             return userStore;
                         });
+                        services.AddScoped<ArticleService>();
                     });
             }).CreateDefaultClient();
         }
