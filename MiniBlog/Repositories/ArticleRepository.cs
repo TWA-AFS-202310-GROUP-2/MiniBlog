@@ -21,10 +21,19 @@ namespace MiniBlog.Repositories
         public async Task<List<Article>> GetArticles() =>
             await articleCollection.Find(_ => true).ToListAsync();
 
-        public async Task<Article> CreateArticle(Article article)
-        {
-            await articleCollection.InsertOneAsync(article);
+        public async Task<Article?> CreateArticle(Article article)
+        {   
+            if (article.UserName != null)
+            {
+                await articleCollection.InsertOneAsync(article); 
+            }
+            
             return await articleCollection.Find(a => a.Title == article.Title).FirstAsync();
+        }
+
+        public async Task<Article?> GetArticleById(string id)
+        {
+            return await articleCollection.Find(a => a.Id == id).FirstAsync();
         }
     }
 }

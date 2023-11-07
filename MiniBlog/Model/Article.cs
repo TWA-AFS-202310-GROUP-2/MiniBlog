@@ -18,7 +18,7 @@ namespace MiniBlog.Model
             Content = content;
         }
 
-        public static string CollectionName { get; set; } = "Article";
+        public static string CollectionName { get; set; } = "Articles";
 
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
