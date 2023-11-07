@@ -18,7 +18,7 @@ namespace MiniBlogTest
 
         protected CustomWebApplicationFactory<Startup> Factory { get; }
 
-        protected HttpClient GetClient(ArticleStore articleStore = null, UserStore userStore = null)
+        protected HttpClient GetClient(ArticleStore articleStore = null, UserStore userStore = null, IArticleRepository articleRepository = null)
         {
             return Factory.WithWebHostBuilder(builder =>
             {
@@ -34,8 +34,10 @@ namespace MiniBlogTest
                             return userStore;
                         });
                         services.AddScoped<ArticleService>();
-                        services.AddScoped<ArticleRepository>();
-                        services.AddScoped<UserRepository>();
+                        services.AddScoped<IArticleRepository>(provider =>
+                        {
+                            return articleRepository;
+                        });
                     });
             }).CreateDefaultClient();
         }

@@ -12,9 +12,9 @@ public class ArticleService
 {
     private readonly ArticleStore articleStore = null!;
     private readonly UserStore userStore = null!;
-    private readonly ArticleRepository articleRepository = null!;
-    private readonly UserRepository userRepository = null!;
-    public ArticleService(ArticleStore articleStore, UserStore userStore, ArticleRepository articleRepository, UserRepository userRepository)
+    private readonly IArticleRepository articleRepository = null!;
+
+    public ArticleService(ArticleStore articleStore, UserStore userStore, IArticleRepository articleRepository)
     {
         this.articleStore = articleStore;
         this.userStore = userStore;

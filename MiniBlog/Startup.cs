@@ -39,8 +39,7 @@ namespace MiniBlog
             var mongoClient = new MongoClient(Configuration.GetConnectionString("MongoDB"));
             services.AddSingleton<IMongoClient>(mongoClient);
 
-            services.AddScoped<ArticleRepository>();
-            services.AddScoped<UserRepository>();
+            services.AddScoped<IArticleRepository>(provider => new ArticleRepository(mongoClient));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

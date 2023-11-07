@@ -7,7 +7,7 @@ using MongoDB.Driver;
 
 namespace MiniBlog.Repositories
 {
-    public class ArticleRepository
+    public class ArticleRepository : IArticleRepository
     {
         private readonly IMongoCollection<Article> articleCollection;
 
