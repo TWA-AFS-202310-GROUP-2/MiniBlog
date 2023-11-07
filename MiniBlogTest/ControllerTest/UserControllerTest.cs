@@ -13,57 +13,58 @@ using MiniBlog.Model;
 using MiniBlog.Stores;
 using Newtonsoft.Json;
 using Xunit;
-using Xunit.Sdk;
+using MiniBlog.Repositories;
+using Moq;
 
 namespace MiniBlogTest.ControllerTest
 {
     [Collection("IntegrationTest")]
     public class UserControllerTest : TestBase
     {
+        private readonly Mock<IArticleRepository> mockArticleRepository;
+        private readonly Mock<IUserRepository> mockUserRepository;
+
+        private readonly ArticleStore articleStore;
+        private readonly UserStore userStore;
         public UserControllerTest(CustomWebApplicationFactory<Startup> factory)
             : base(factory)
 
         {
+            mockArticleRepository = new Mock<IArticleRepository>();
+            mockUserRepository = new Mock<IUserRepository>();
+            articleStore = new ArticleStore();
+            userStore = new UserStore(new List<User>());
         }
 
         [Fact]
         public async Task Should_get_all_users()
         {
-            // given
             var client = GetClient(new ArticleStore(), new UserStore(new List<User>()));
-
-            // when
             var response = await client.GetAsync("/user");
-
-            // then
             response.EnsureSuccessStatusCode();
             var body = await response.Content.ReadAsStringAsync();
             var users = JsonConvert.DeserializeObject<List<User>>(body);
-            Assert.True(users.Count == 0);
+            Assert.Empty(users);
         }
 
         [Fact]
         public async Task Should_register_user_success()
         {
-            // given
             var client = GetClient(new ArticleStore(), new UserStore(new List<User>()));
+
             var userName = "Tom";
             var email = "a@b.com";
             var user = new User(userName, email);
             var userJson = JsonConvert.SerializeObject(user);
-            StringContent content = new StringContent(userJson, Encoding.UTF8, MediaTypeNames.Application.Json);
 
-            // when
+            StringContent content = new StringContent(userJson, Encoding.UTF8, MediaTypeNames.Application.Json);
             var registerResponse = await client.PostAsync("/user", content);
 
             // It fail, please help
             Assert.Equal(HttpStatusCode.Created, registerResponse.StatusCode);
 
-            var response = await client.GetAsync("/user");
-            response.EnsureSuccessStatusCode();
-            var body = await response.Content.ReadAsStringAsync();
-            var users = JsonConvert.DeserializeObject<List<User>>(body);
-            Assert.True(users.Count == 1);
+            var users = await GetUsers(client);
+            Assert.Single(users);
             Assert.Equal(email, users[0].Email);
             Assert.Equal(userName, users[0].Name);
         }
@@ -100,11 +101,8 @@ namespace MiniBlogTest.ControllerTest
             StringContent updateUserContent = new StringContent(JsonConvert.SerializeObject(newUser), Encoding.UTF8, MediaTypeNames.Application.Json);
             await client.PutAsync("/user", updateUserContent);
 
-            var response = await client.GetAsync("/user");
-            response.EnsureSuccessStatusCode();
-            var body = await response.Content.ReadAsStringAsync();
-            var users = JsonConvert.DeserializeObject<List<User>>(body);
-            Assert.True(users.Count == 1);
+            var users = await GetUsers(client);
+            Assert.Single(users);
             Assert.Equal(updatedEmail, users[0].Email);
             Assert.Equal(userName, users[0].Name);
         }
@@ -112,49 +110,71 @@ namespace MiniBlogTest.ControllerTest
         [Fact]
         public async Task Should_delete_user_and_related_article_success()
         {
-            // given
+            var client = GetClient(articleStore, userStore, mockArticleRepository.Object, mockUserRepository.Object);
+
             var userName = "Tom";
-            var client = GetClient(
-                new ArticleStore(
-                    new List<Article>
-                    {
-                        new Article(userName, string.Empty, string.Empty),
-                        new Article(userName, string.Empty, string.Empty),
-                    }),
-                new UserStore(
-                    new List<User>
-                    {
-                        new User(userName, string.Empty),
-                    }));
 
-            var articlesResponse = await client.GetAsync("/article");
+            await PrepareArticle(new Article(userName, string.Empty, string.Empty), client);
+            await PrepareArticle(new Article(userName, string.Empty, string.Empty), client);
 
-            articlesResponse.EnsureSuccessStatusCode();
-            var articles = JsonConvert.DeserializeObject<List<Article>>(
-                await articlesResponse.Content.ReadAsStringAsync());
-            Assert.Equal(2, articles.Count);
+            mockArticleRepository.Setup(repo => repo.GetArticles())
+                                 .Callback(() =>
+                                 {
+                                     userStore.Users.Add(new User(userName));
+                                 })
+                                 .ReturnsAsync(
+                                    new List<Article>
+                                    {
+                                        new Article(userName, "Good day", "What a good day today!"),
+                                        new Article(userName, "Good day", "What a good day today!"),
+                                        new Article("Xianke", "Good day", "What a good day today!"),
+                                        new Article("Xianke", "Good day", "What a good day today!"),
+                                    });
+            var articles = await GetArticles(client);
+            Assert.Equal(4, articles.Count);
 
-            var userResponse = await client.GetAsync("/user");
-            userResponse.EnsureSuccessStatusCode();
-            var users = JsonConvert.DeserializeObject<List<User>>(
-                await userResponse.Content.ReadAsStringAsync());
-            Assert.True(users.Count == 1);
+            var users = await GetUsers(client);
+            Assert.Single(users);
 
-            // when
             await client.DeleteAsync($"/user?name={userName}");
+            mockArticleRepository.Setup(repo => repo.GetArticles())
+                                 .Callback(() =>
+                                 {
+                                     userStore.Users.RemoveAll(u => u.Name == userName);
+                                 })
+                                 .ReturnsAsync(
+                                    new List<Article>
+                                    {
+                                        new Article("Xianke", "Good day", "What a good day today!"),
+                                        new Article("Xianke", "Good day", "What a good day today!"),
+                                    });
+            var articlesAfterDeleteUser = await GetArticles(client);
+            Assert.Equal(2, articlesAfterDeleteUser.Count);
 
-            // then
-            var articlesResponseAfterDeletion = await client.GetAsync("/article");
-            articlesResponseAfterDeletion.EnsureSuccessStatusCode();
-            var articlesLeft = JsonConvert.DeserializeObject<List<Article>>(
-                await articlesResponseAfterDeletion.Content.ReadAsStringAsync());
-            Assert.True(articlesLeft.Count == 0);
+            var usersAfterDeleteUser = await GetUsers(client);
+            Assert.Empty(usersAfterDeleteUser);
+        }
 
-            var userResponseAfterDeletion = await client.GetAsync("/user");
-            userResponseAfterDeletion.EnsureSuccessStatusCode();
-            var usersLeft = JsonConvert.DeserializeObject<List<User>>(
-                await userResponseAfterDeletion.Content.ReadAsStringAsync());
-            Assert.True(usersLeft.Count == 0);
+        private static async Task<List<User>> GetUsers(HttpClient client)
+        {
+            var response = await client.GetAsync("/user");
+            var body = await response.Content.ReadAsStringAsync();
+            var users = JsonConvert.DeserializeObject<List<User>>(body);
+            return users;
+        }
+
+        private static async Task<List<Article>> GetArticles(HttpClient client)
+        {
+            var articleResponse = await client.GetAsync("/article");
+            var articlesJson = await articleResponse.Content.ReadAsStringAsync();
+            var articles = JsonConvert.DeserializeObject<List<Article>>(articlesJson);
+            return articles;
+        }
+
+        private static async Task PrepareArticle(Article article1, HttpClient client)
+        {
+            StringContent registerUserContent = new StringContent(JsonConvert.SerializeObject(article1), Encoding.UTF8, MediaTypeNames.Application.Json);
+            await client.PostAsync("/article", registerUserContent);
         }
     }
 }

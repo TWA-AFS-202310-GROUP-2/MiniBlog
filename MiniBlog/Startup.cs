@@ -35,10 +35,10 @@ namespace MiniBlog
             services.AddSingleton<ArticleStore>(new ArticleStore());
             services.AddSingleton<UserStore>(new UserStore());
             services.AddScoped<ArticleService>();
-
+            services.AddScoped<UserService>();
             var mongoClient = new MongoClient(Configuration.GetConnectionString("MongoDB"));
             services.AddSingleton<IMongoClient>(mongoClient);
-
+            services.AddScoped<IUserRepository>(provider => new UserRepository(mongoClient));
             services.AddScoped<IArticleRepository>(provider => new ArticleRepository(mongoClient));
         }
 

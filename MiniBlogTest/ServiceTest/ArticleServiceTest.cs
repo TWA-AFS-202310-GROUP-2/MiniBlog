@@ -1,29 +1,106 @@
-using MiniBlog.Model;
+using Xunit;
 using MiniBlog.Services;
 using MiniBlog.Stores;
-using Xunit;
+using MiniBlog.Model;
+using MiniBlog.Repositories;
+using System;
+using System.Threading.Tasks;
+using Moq;
+using MongoDB.Driver;
+using System.Collections.Generic;
 
-namespace MiniBlogTest.ServiceTest;
-
-public class ArticleServiceTest
+namespace MiniBlogTest.ServiceTest
 {
-    // [Fact]
-    // public void Should_create_article_when_invoke_CreateArticle_given_input_article()
-    // {
-    //     // given
-    //     var newArticle = new Article("Jerry", "Let's code", "c#");
-    //     var articleStore = new ArticleStore();
-    //     var articleCountBeforeAddNewOne = articleStore.Articles.Count;
-    //     var userStore = new UserStore();
-    //     var articleService = new ArticleService(articleStore, userStore);
+    public class ArticleServiceTest
+    {
+        private readonly Mock<IArticleRepository> mockArticleRepository;
+        private readonly Mock<IUserRepository> mockUserRepository;
+        private readonly ArticleService articleService;
 
-    //     // when
-    //     var addedArticle = articleService.CreateArticle(newArticle);
+        public ArticleServiceTest()
+        {
+            mockArticleRepository = new Mock<IArticleRepository>();
+            mockUserRepository = new Mock<IUserRepository>();
+            articleService = new ArticleService(mockArticleRepository.Object, mockUserRepository.Object);
+        }
 
-    //     // then
-    //     Assert.Equal(articleCountBeforeAddNewOne + 1, articleStore.Articles.Count);
-    //     Assert.Equal(newArticle.Title, addedArticle.Title);
-    //     Assert.Equal(newArticle.Content, addedArticle.Content);
-    //     Assert.Equal(newArticle.UserName, addedArticle.UserName);
-    // }
+        [Fact]
+        public async Task ShouldCreateArticleAndRegisterUserCorrect_WhenCreateArticleService_GivenArticleAndUserNotExist()
+        {
+            // Arrange
+            var articleToCreate = new Article("test", "test", "test");
+            mockArticleRepository.Setup(repo => repo.CreateArticle(It.IsAny<Article>()))
+                                 .Callback<Article>(a => a.Id = Guid.NewGuid().ToString())
+                                 .ReturnsAsync((Article a) => a);
+            mockUserRepository.Setup(repo => repo.GetUserByName(It.IsAny<string>()))
+                              .ReturnsAsync((User)null);
+            mockUserRepository.Setup(repo => repo.CreateUser(It.IsAny<User>()))
+                              .ReturnsAsync((User u) => u);
+            // Act
+            var createdArticle = await articleService.CreateArticle(articleToCreate);
+
+            // Assert
+            Assert.NotNull(createdArticle.Id);
+            Assert.Equal("test", createdArticle.UserName);
+            Assert.Equal("test", createdArticle.Title);
+            Assert.Equal("test", createdArticle.Content);
+            mockArticleRepository.Verify(repo => repo.CreateArticle(It.IsAny<Article>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ShouldCreateArticleCorrect_WhenCreateArticleService_GivenArticleAndUserExist()
+        {
+            // Arrange
+            var articleToCreate = new Article("test", "test", "test") { UserName = "test" };
+            mockArticleRepository.Setup(repo => repo.CreateArticle(It.IsAny<Article>()))
+                                 .Callback<Article>(a => a.Id = Guid.NewGuid().ToString())
+                                 .ReturnsAsync((Article a) => a);
+            mockUserRepository.Setup(repo => repo.GetUserByName(It.IsAny<string>()))
+                              .ReturnsAsync(new User { Name = "test" });
+            mockUserRepository.Setup(repo => repo.CreateUser(It.IsAny<User>()))
+                              .ReturnsAsync((User u) => u);
+            // Act
+            var createdArticle = await articleService.CreateArticle(articleToCreate);
+
+            // Assert
+            Assert.NotNull(createdArticle.Id);
+            Assert.Equal("test", createdArticle.UserName);
+            Assert.Equal("test", createdArticle.Title);
+            Assert.Equal("test", createdArticle.Content);
+            mockArticleRepository.Verify(repo => repo.CreateArticle(It.IsAny<Article>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ShouldGetArticleCorrect_WhenGetById_GivenExistingArticleId()
+        {
+            // Arrange
+            var articleId = Guid.NewGuid().ToString();
+            var expectedArticle = new Article("test", "test", "test") { Id = articleId };
+            mockArticleRepository.Setup(repo => repo.GetById(articleId))
+                                 .ReturnsAsync(expectedArticle);
+
+            // Act
+            var foundArticle = await articleService.GetById(articleId);
+
+            // Assert
+            Assert.Equal(expectedArticle, foundArticle);
+            mockArticleRepository.Verify(repo => repo.GetById(articleId), Times.Once);
+        }
+
+        [Fact]
+        public async Task ShouldReturnNull_WhenGetById_GivenNonExistingArticleId()
+        {
+            // Arrange
+            var nonExistingArticleId = Guid.NewGuid().ToString();
+            mockArticleRepository.Setup(repo => repo.GetById(nonExistingArticleId))
+                                 .ReturnsAsync((Article)null);
+
+            // Act
+            var foundArticle = await articleService.GetById(nonExistingArticleId);
+
+            // Assert
+            Assert.Null(foundArticle);
+            mockArticleRepository.Verify(repo => repo.GetById(nonExistingArticleId), Times.Once);
+        }
+    }
 }
