@@ -3,6 +3,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.AspNetCore.Mvc;
 using MiniBlog.Model;
+using MiniBlog.Services;
 using MiniBlog.Stores;
 
 namespace MiniBlog.Controllers
@@ -13,11 +14,13 @@ namespace MiniBlog.Controllers
     {
         private readonly ArticleStore articleStore = null!;
         private readonly UserStore userStore = null!;
+        private readonly ArticleService articleService = null!;
 
-        public UserController(ArticleStore articleStore, UserStore userStore)
+        public UserController(ArticleStore articleStore, UserStore userStore, ArticleService articleService)
         {
             this.articleStore = articleStore;
             this.userStore = userStore;
+            this.articleService = articleService;
         }
 
         [HttpPost]
@@ -56,7 +59,7 @@ namespace MiniBlog.Controllers
             if (foundUser != null)
             {
                 userStore.Users.Remove(foundUser);
-                articleStore.Articles.RemoveAll(a => a.UserName == foundUser.Name);
+                articleService.DeleteByName(foundUser.Name);
             }
 
             return foundUser;

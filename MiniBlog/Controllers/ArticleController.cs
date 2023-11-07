@@ -32,7 +32,7 @@ namespace MiniBlog.Controllers
         {
             var addedArticle = await articleService.CreateArticle(article);
 
-            return CreatedAtAction(nameof(GetById), new { id = article.Id }, addedArticle);
+            return Created(nameof(GetById), addedArticle);
         }
 
         [HttpGet("{id}")]
