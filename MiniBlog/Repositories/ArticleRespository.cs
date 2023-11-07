@@ -18,13 +18,18 @@ namespace MiniBlog.Repositories
             articleCollection = mongoDatabase.GetCollection<Article>(Article.CollectionName);
         }
 
-        public async Task<List<Article>> GetArticles() =>
+        public async Task<List<Article>> GetArticlesAsync() =>
             await articleCollection.Find(_ => true).ToListAsync();
 
-        public async Task<Article> CreateArticle(Article article)
+        public async Task<Article> CreateArticleAsync(Article article)
         {
             await articleCollection.InsertOneAsync(article);
             return await articleCollection.Find(a => a.Title == article.Title).FirstAsync();
+        }
+
+        public async Task<Article> GetById(string id)
+        {
+            return await articleCollection.Find(a => a.Id == id).FirstAsync();
         }
     }
 }

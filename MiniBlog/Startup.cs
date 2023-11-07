@@ -40,6 +40,7 @@ namespace MiniBlog
             services.AddSingleton<IMongoClient>(mongoClient);
 
             services.AddScoped<ArticleRepository>();
+            services.AddScoped<UserRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
