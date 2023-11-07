@@ -43,9 +43,9 @@ public class ArticleService
         return await articleRepository.GetArticles();
     }
 
-    public Article? GetById(Guid id)
+    public async Task<Article> GetById(Guid id)
     {
-        return articleStore.Articles.FirstOrDefault(article => article.Id == id);
+        return await articleRepository.GetById(id);
     }
 
     public async Task<long> DeleteByName(string name)

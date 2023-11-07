@@ -35,9 +35,9 @@ namespace MiniBlog.Controllers
         }
 
         [HttpGet("{id}")]
-        public Article? GetById(Guid id)
+        public async Task<Article?> GetById(Guid id)
         {
-            return articleService.GetById(id);
+            return await articleService.GetById(id);
         }
     }
 }
