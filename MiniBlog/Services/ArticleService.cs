@@ -47,4 +47,9 @@ public class ArticleService
     {
         return articleStore.Articles.FirstOrDefault(article => article.Id == id);
     }
+
+    public async Task<long> DeleteByName(string name)
+    {
+        return await articleRepository.Delete(name);
+    }
 }
