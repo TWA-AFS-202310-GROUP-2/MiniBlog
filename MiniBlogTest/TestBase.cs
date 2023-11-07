@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using MiniBlog;
 using MiniBlog.Model;
+using MiniBlog.Repositories;
 using MiniBlog.Services;
 using MiniBlog.Stores;
 using Xunit;
@@ -17,7 +18,7 @@ namespace MiniBlogTest
 
         protected CustomWebApplicationFactory<Startup> Factory { get; }
 
-        protected HttpClient GetClient(ArticleStore articleStore = null, UserStore userStore = null)
+        protected HttpClient GetClient(ArticleStore articleStore = null, UserStore userStore = null, IArticleRepository articleRepository = null, IUserRepository userRepository = null)
         {
             return Factory.WithWebHostBuilder(builder =>
             {
@@ -33,6 +34,15 @@ namespace MiniBlogTest
                             return userStore;
                         });
                         services.AddScoped<ArticleService>();
+                        services.AddScoped<UserService>();
+                        services.AddScoped<IUserRepository>(provider =>
+                        {
+                            return userRepository;
+                        });
+                        services.AddScoped<IArticleRepository>(provider =>
+                        {
+                            return articleRepository;
+                        });
                     });
             }).CreateDefaultClient();
         }

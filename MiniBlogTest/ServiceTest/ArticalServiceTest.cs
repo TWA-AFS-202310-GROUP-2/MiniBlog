@@ -16,13 +16,11 @@ namespace MiniBlogTest.ServiceTest
         private readonly Mock<IArticleRepository> mockArticleRepository;
         private readonly Mock<IUserRepository> mockUserRepository;
         private readonly ArticleService articleService;
-        private readonly UserStore userStore;
 
         public ArticleServiceTest()
         {
             mockArticleRepository = new Mock<IArticleRepository>();
             mockUserRepository = new Mock<IUserRepository>();
-            userStore = new UserStore(new List<User>());
             articleService = new ArticleService(mockArticleRepository.Object, mockUserRepository.Object);
         }
 
@@ -37,7 +35,6 @@ namespace MiniBlogTest.ServiceTest
             mockUserRepository.Setup(repo => repo.GetUserByName(It.IsAny<string>()))
                               .ReturnsAsync((User)null);
             mockUserRepository.Setup(repo => repo.CreateUser(It.IsAny<User>()))
-                              .Callback<User>(u => userStore.Users.Add(u))
                               .ReturnsAsync((User u) => u);
             // Act
             var createdArticle = await articleService.CreateArticleService(articleToCreate);
@@ -61,7 +58,6 @@ namespace MiniBlogTest.ServiceTest
             mockUserRepository.Setup(repo => repo.GetUserByName(It.IsAny<string>()))
                               .ReturnsAsync(new User { Name = "test" });
             mockUserRepository.Setup(repo => repo.CreateUser(It.IsAny<User>()))
-                              .Callback<User>(u => userStore.Users.Add(u))
                               .ReturnsAsync((User u) => u);
             // Act
             var createdArticle = await articleService.CreateArticleService(articleToCreate);
