@@ -13,16 +13,27 @@ using MiniBlog.Model;
 using MiniBlog.Stores;
 using Newtonsoft.Json;
 using Xunit;
+using MiniBlog.Repositories;
+using Moq;
 
 namespace MiniBlogTest.ControllerTest
 {
     [Collection("IntegrationTest")]
     public class UserControllerTest : TestBase
     {
+        private readonly Mock<IArticleRepository> mockArticleRepository;
+        private readonly Mock<IUserRepository> mockUserRepository;
+
+        private readonly ArticleStore articleStore;
+        private readonly UserStore userStore;
         public UserControllerTest(CustomWebApplicationFactory<Startup> factory)
             : base(factory)
 
         {
+            mockArticleRepository = new Mock<IArticleRepository>();
+            mockUserRepository = new Mock<IUserRepository>();
+            articleStore = new ArticleStore();
+            userStore = new UserStore(new List<User>());
         }
 
         [Fact]
@@ -99,13 +110,26 @@ namespace MiniBlogTest.ControllerTest
         [Fact]
         public async Task Should_delete_user_and_related_article_success()
         {
-            var client = GetClient(new ArticleStore(), new UserStore(new List<User>()));
+            var client = GetClient(articleStore, userStore, mockArticleRepository.Object, mockUserRepository.Object);
 
             var userName = "Tom";
 
             await PrepareArticle(new Article(userName, string.Empty, string.Empty), client);
             await PrepareArticle(new Article(userName, string.Empty, string.Empty), client);
 
+            mockArticleRepository.Setup(repo => repo.GetAll())
+                                 .Callback(() =>
+                                 {
+                                     userStore.Users.Add(new User(userName));
+                                 })
+                                 .ReturnsAsync(
+                                    new List<Article>
+                                    {
+                                        new Article(userName, "Good day", "What a good day today!"),
+                                        new Article(userName, "Good day", "What a good day today!"),
+                                        new Article("Xianke", "Good day", "What a good day today!"),
+                                        new Article("Xianke", "Good day", "What a good day today!"),
+                                    });
             var articles = await GetArticles(client);
             Assert.Equal(4, articles.Count);
 
@@ -113,7 +137,17 @@ namespace MiniBlogTest.ControllerTest
             Assert.Single(users);
 
             await client.DeleteAsync($"/user?name={userName}");
-
+            mockArticleRepository.Setup(repo => repo.GetAll())
+                                 .Callback(() =>
+                                 {
+                                     userStore.Users.RemoveAll(u => u.Name == userName);
+                                 })
+                                 .ReturnsAsync(
+                                    new List<Article>
+                                    {
+                                        new Article("Xianke", "Good day", "What a good day today!"),
+                                        new Article("Xianke", "Good day", "What a good day today!"),
+                                    });
             var articlesAfterDeleteUser = await GetArticles(client);
             Assert.Equal(2, articlesAfterDeleteUser.Count);
 
