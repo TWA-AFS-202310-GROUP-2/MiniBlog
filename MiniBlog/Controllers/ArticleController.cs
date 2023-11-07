@@ -15,7 +15,7 @@ namespace MiniBlog.Controllers
     public class ArticleController : ControllerBase
     {
         private readonly ArticleService articleService = null!;
-
+        private readonly UserService userService = null!;
         public ArticleController(ArticleService articleService)
         {
             this.articleService = articleService;
@@ -30,15 +30,14 @@ namespace MiniBlog.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(Article article)
         {
-            var addedArticle = await articleService.CreateArticle(article);
-
-            return CreatedAtAction(nameof(GetById), new { id = article.Id }, addedArticle);
+            await articleService.CreateArticle(article);
+            return CreatedAtAction(nameof(GetById), new { id = article.Id }, article);
         }
 
         [HttpGet("{id}")]
-        public Article? GetById(Guid id)
+        public async Task<Article?> GetById(Guid id)
         {
-            return articleService.GetById(id);
+            return await articleService.GetById(id);
         }
     }
 }

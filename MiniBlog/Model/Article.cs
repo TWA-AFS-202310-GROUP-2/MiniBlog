@@ -12,7 +12,7 @@ namespace MiniBlog.Model
 
         public Article(string userName, string title, string content)
         {
-            Id = Guid.NewGuid().ToString();
+            Id = Guid.NewGuid();
             UserName = userName;
             Title = title;
             Content = content;
@@ -22,7 +22,7 @@ namespace MiniBlog.Model
 
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string? Id { get; set; } = null!;
+        public Guid? Id { get; set; } = null!;
 
         public string UserName { get; set; } = null!;
         public string Title { get; set; } = null!;
