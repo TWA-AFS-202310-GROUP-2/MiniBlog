@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using MiniBlog.Model;
 using MiniBlog.Repositories;
 using MiniBlog.Services;
@@ -13,7 +14,7 @@ public class ArticleServiceTest
 {
     private readonly Mock<IArticleRepository> mockArticleRepository;
     private readonly Mock<IUserRepository> mockUserRepository;
-    private readonly ArticleService articleService;
+    private ArticleService articleService;
 
     public ArticleServiceTest()
     {
@@ -29,8 +30,9 @@ public class ArticleServiceTest
         var newArticle = new Article("Jerry", "Let's code", "c#");
 
         mockArticleRepository.Setup(r => r.CreateArticle(It.IsAny<Article>())).Callback<Article>(article => article.Id = Guid.NewGuid().ToString()).ReturnsAsync((Article article) => article);
-        mockUserRepository.Setup(r => r.GetByName(It.IsAny<string>())).ReturnsAsync((User)null);
-        mockUserRepository.Setup(r => r.Create(It.IsAny<User>())).ReturnsAsync((User user) => user);
+
+        var userStore = new UserStore();
+        articleService = new ArticleService(mockArticleRepository.Object, userStore);
 
         // when
         var addedArticle = await articleService.CreateArticle(newArticle);
@@ -42,8 +44,10 @@ public class ArticleServiceTest
         Assert.Equal(newArticle.UserName, addedArticle.UserName);
 
         mockArticleRepository.Verify(m => m.CreateArticle(It.IsAny<Article>()), Times.Once);
-        mockUserRepository.Verify(m => m.GetByName(It.IsAny<string>()), Times.Once);
-        mockUserRepository.Verify(m => m.Create(It.IsAny<User>()), Times.Once);
+        //mockUserRepository.Verify(m => m.GetByName(It.IsAny<string>()), Times.Once);
+        //mockUserRepository.Verify(m => m.Create(It.IsAny<User>()), Times.Once);
+        Assert.True(userStore.Users.Count == 3);
+        Assert.True(userStore.Users[2].Name == "Jerry");
     }
 
     [Fact]

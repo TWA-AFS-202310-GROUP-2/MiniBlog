@@ -38,9 +38,4 @@ public class ArticleService
     {
         return await articleRepository.GetById(id);
     }
-
-    public async Task<long> DeleteByName(string name)
-    {
-        return await articleRepository.Delete(name);
-    }
 }

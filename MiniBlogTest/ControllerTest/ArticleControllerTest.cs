@@ -61,33 +61,27 @@ namespace MiniBlogTest.ControllerTest
         public async void Should_create_article_and_register_user_correct()
         {
             //given
-            var userStore = new UserStore(new List<User>() { });
-            var mockArticleRepository = new Mock<IArticleRepository>();
-            var mockUserRepository = new Mock<IUserRepository>();
-            mockArticleRepository.Setup(repo => repo.CreateArticle(It.IsAny<Article>()))
-                .Callback<Article>(article => article.Id = Guid.NewGuid().ToString())
-                .ReturnsAsync((Article article) =>
-                                {
-                                    userStore.Users.Add(new User(article.UserName));
-                                    return article;
-                                });
-            mockArticleRepository.Setup(repo => repo.GetArticles())
-                                 .ReturnsAsync(
-                                    new List<Article>
-                                    {
-                                        new Article("Tom", "Good day", "What a good day today!"),
-                                        new Article("Tom", "Good day", "What a good day today!"),
-                                    });
-            var client = GetClient(
-                new ArticleStore(),
-                userStore,
-                mockArticleRepository.Object,
-                mockUserRepository.Object);
 
             string userNameWhoWillAdd = "Tom";
             string articleContent = "What a good day today!";
             string articleTitle = "Good day";
             Article article = new Article(userNameWhoWillAdd, articleTitle, articleContent);
+
+            var userStore = new UserStore(new List<User>() { });
+            var mockArticleRepository = new Mock<IArticleRepository>();
+
+            mockArticleRepository.Setup(repo => repo.CreateArticle(It.IsAny<Article>())).ReturnsAsync((Article a) => { a.Id = Guid.NewGuid().ToString(); return a; });
+
+            mockArticleRepository.Setup(repo => repo.GetArticles()).ReturnsAsync(new List<Article>
+            {
+                new Article(userNameWhoWillAdd, articleTitle, articleContent),
+                new Article(userNameWhoWillAdd, articleTitle, articleContent),
+            });
+            var client = GetClient(
+                new ArticleStore(),
+                userStore,
+                mockArticleRepository.Object,
+                userStore);
 
             var httpContent = JsonConvert.SerializeObject(article);
             StringContent content = new StringContent(httpContent, Encoding.UTF8, MediaTypeNames.Application.Json);
